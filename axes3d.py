@@ -41,11 +41,7 @@ class Axes3D(_Axes3D):
 
     p = np.einsum('ij,jkl->kli',R,p)
     p += anchor
-    #p = np.einsum('ijk->kij',p)
     p = np.reshape(p,(Nl*Nw,3))   
-    #x = p[:,:,0]
-    #y = p[:,:,1]
-    #z = p[:,:,2]
     c = func(p,*func_args,**func_kwargs)
     c = np.reshape(c,(Nl,Nw))
     p = np.reshape(p,(Nl,Nw,3))
@@ -71,26 +67,27 @@ class Axes3D(_Axes3D):
                             color='k')
     return m
     
-def f(points):
-  return np.sqrt(np.sum(points**2,1))
+if __name__ == '__main__':
+  def f(points):
+    return np.sqrt(np.sum(points**2,1))
 
-fig = plt.figure()
-ax = Axes3D(fig)
-xrot = np.pi/2.0001
-yrot = 0.0
-zrot = 0.0
-length = 2.0
-width = 2.0
-anchor = np.array([-1.0,0.0,1.0])
+  fig = plt.figure()
+  ax = Axes3D(fig)
+  xrot = np.pi/2.0001
+  yrot = 0.0
+  zrot = 0.0
+  length = 2.0
+  width = 2.0
+  anchor = np.array([-1.0,0.0,1.0])
 
 
 
-q = ax.cross_section(f,anchor,
-                 zrot,yrot,xrot,
-                     length,width,cmap=tcm.slip_r,Nl=50,Nw=50)
-ax.set_xlim(-3,3)
-ax.set_ylim(-3,3)
-ax.set_zlim(-3,3)
-plt.colorbar(q)
-plt.show()
+  q = ax.cross_section(f,anchor,
+                       zrot,yrot,xrot,
+                       length,width,cmap=tcm.slip_r,Nl=50,Nw=50)
+  ax.set_xlim(-3,3)
+  ax.set_ylim(-3,3)
+  ax.set_zlim(-3,3)
+  plt.colorbar(q)
+  plt.show()
   
