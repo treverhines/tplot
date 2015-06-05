@@ -6,6 +6,27 @@ from matplotlib import cm
 import numpy as np
 import cm as tcm
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
+from inverse.tikhonov import Perturb
+
+class Arrow3D(FancyArrowPatch):
+  '''                                                                                                                        
+  creates an artist object for a 3D arrow                                                                                    
+  '''
+  def __init__(self,xs,ys,zs,*args,**kwargs):
+    '''                                                                                                                      
+    arguments:                                                                                                               
+      xs: the x coordinates of both sides of the arrow                                                                       
+      ys: the y coordinates of both sides of the arrow                                                                       
+      zs: the z coordinates of both sides of the arrow                                                                       
+    '''
+    FancyArrowPatch.__init__(self,(0,0),(0,0),*args,**kwargs)
+    self.verts = xs,ys,zs
+
+  def draw(self,renderer):
+    xp,yp,zp = proj3d.proj_transform(*self.verts,M=renderer.M)
+    self.set_positions((xp[0],yp[0]),(xp[1],yp[1]))
+    FancyArrowPatch.draw(self,renderer)
 
 
 class Axes3D(_Axes3D):
@@ -17,9 +38,10 @@ class Axes3D(_Axes3D):
       rect = (0.1,0.1,0.8,0.8)
       _Axes3D.__init__(self,*args,rect=rect,**kwargs)
 
-    self.clim_set = False
+    self.cross_section_clim_set = False
     self.pbaspect = np.array([1.0,1.0,1.0])
     
+
   def cross_section(self,func,anchor,
                     zrot,yrot,xrot,
                     length,width,
@@ -53,14 +75,13 @@ class Axes3D(_Axes3D):
     c = np.reshape(c,(Nl,Nw))
     p = np.reshape(p,(Nl,Nw,3))
 
-    if not self.clim_set:
+    if not self.cross_section_clim_set:
       self.sm = cm.ScalarMappable(cmap=cmap)
       self.sm.set_array(c)
       if (clim is not None):
         self.sm.set_clim(clim[0],clim[1])
 
-      plt.colorbar(self.sm,ax=self)
-      self.clim_set = True
+      self.cross_section_clim_set = True
 
     cnorm = self.sm.norm(c)#(c - clim[0])/(clim[1] - clim[0])
     s = self.plot_surface(p[:,:,0],
@@ -70,27 +91,53 @@ class Axes3D(_Axes3D):
                           facecolors=cmap(cnorm),
                           rstride=1,cstride=1,
                           **kwargs)
-     
+
     idx1 = np.array([[0,-1],[0,-1]])
     idx2 = np.array([[0,0],[-1,-1]])
-    w = self.plot_wireframe(p[:,:,0][idx1,idx2],
-                            p[:,:,1][idx1,idx2],
-                            p[:,:,2][idx1,idx2],
+    w = self.plot_wireframe(p[idx1,idx2,0],
+                            p[idx1,idx2,1],
+                            p[idx1,idx2,2],
                             color='k',lw=lw)
-    return s
+
+    return self.sm
+
+
+  def set_pbaspect(self,x):
+    self.pbaspect = np.asarray(x)
+
+
+  def draw_basis(self,
+                 center=None,
+                 length=1.0,
+                 labels=None,
+                 fontsize=16,
+                 **kwargs):
+    if center is None:
+      center = np.array([0.0,0.0,0.0])
+
+    center = np.asarray(center)
+    if labels is None:
+      labels = ['x','y','z']
+
+    for v,i in enumerate(Perturb(np.zeros(3),length)):
+      ends = i + center
+      artist = Arrow3D(*zip(center,ends),**kwargs)
+      self.text(ends[0],ends[1],ends[2],labels[v])
+      self.add_artist(artist)
 
 
   def equal(self):
-    #self.auto_scale_xyz(self.get_xlim3d(),self.get_ylim3d(),self.get_zlim3d())
-    self.pbaspect[0] = np.diff(self.get_xlim3d())
-    self.pbaspect[1] = np.diff(self.get_ylim3d())
-    self.pbaspect[2] = np.diff(self.get_zlim3d())
-    #self.pbaspect[self.pbaspect < 0.2] = 0.2
-    self.pbaspect /= (1.0*self.pbaspect.max())
+    self.set_pbaspect([1.0,1.0,1.0])
 
-    self.auto_scale_xyz(self.get_xlim3d(),
-                        self.get_ylim3d(),
-                        self.get_zlim3d())
+    d = np.max([np.diff(self.get_xlim3d()),
+                np.diff(self.get_ylim3d()),
+                np.diff(self.get_zlim3d())])/2.0
+    
+    mx = np.mean(self.get_xlim3d())
+    my = np.mean(self.get_ylim3d())
+    mz = np.mean(self.get_zlim3d())
+    
+    self.auto_scale_xyz((mx-d,mx+d),(my-d,my+d),(mz-d,mz+d))
 
 
   def get_proj(self):
@@ -162,9 +209,10 @@ if __name__ == '__main__':
   length = 2.0
   width = 2.0
   anchor = np.array([-1.0,0.0,0.0])
-  ax.cross_section(f,anchor,
+  s = ax.cross_section(f,anchor,
                    zrot,yrot,xrot,
                    length,width,cmap=tcm.slip_r,Nl=50,Nw=50,zorder=0)
+  plt.colorbar(s)
   ax.set_xlim(-3,3)
   ax.set_ylim(-3,3)
   ax.set_zlim(-3,3)
