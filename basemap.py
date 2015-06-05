@@ -7,7 +7,7 @@ import matplotlib.cm
 from pegtop import set_shade
 
 class Basemap(_Basemap):
-  def drawtopography(self,resolution=200,cmap=matplotlib.cm.gray,vmin=None,vmax=None,**kwargs):
+  def drawtopography(self,resolution=5000,cmap=matplotlib.cm.gray,vmin=None,vmax=None,**kwargs):
     #try:
     #  url = '/cmld/data5/hinest/Data/SRTM/SoCal.h5'
     #  etopodata = Dataset(url)
