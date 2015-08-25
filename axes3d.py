@@ -10,15 +10,19 @@ from matplotlib.patches import FancyArrowPatch
 from inverse.tikhonov import Perturb
 
 class Arrow3D(FancyArrowPatch):
-  '''                                                                                                                        
-  creates an artist object for a 3D arrow                                                                                    
+  '''                                   
+  creates an artist object for a 3D arrow      
   '''
   def __init__(self,xs,ys,zs,*args,**kwargs):
-    '''                                                                                                                      
-    arguments:                                                                                                               
-      xs: the x coordinates of both sides of the arrow                                                                       
-      ys: the y coordinates of both sides of the arrow                                                                       
-      zs: the z coordinates of both sides of the arrow                                                                       
+    '''                               
+    arguments:             
+
+      xs: the x coordinates of both sides of the arrow        
+
+      ys: the y coordinates of both sides of the arrow      
+
+      zs: the z coordinates of both sides of the arrow       
+
     '''
     FancyArrowPatch.__init__(self,(0,0),(0,0),*args,**kwargs)
     self.verts = xs,ys,zs
@@ -101,6 +105,46 @@ class Axes3D(_Axes3D):
 
     return self.sm
 
+  def vector_cross_section(self,func,anchor,
+                           zrot,yrot,xrot,
+                           length,width,
+                           Nl=20,Nw=20,
+                           lw=1.0,
+                           minmag=0.05, 
+                           arrow_length=1000.0,
+                           func_args=None,
+                           func_kwargs=None,
+                           **kwargs):
+    if func_args is None:
+      func_args = ()
+
+    if func_kwargs is None:
+      func_kwargs = {}
+
+    x = np.linspace(0,length,Nl)
+    y = np.linspace(0,-width,Nw)
+    x,y = np.meshgrid(x,y)
+    z = 0.0*x
+    R = rotation3D(zrot,yrot,xrot)
+    p = np.concatenate((x[None,:,:],
+                        y[None,:,:],
+                        z[None,:,:]),
+                        axis=0)
+
+    p = np.einsum('ij,jkl->kli',R,p)
+    p += anchor
+    p = np.reshape(p,(Nl*Nw,3))   
+    c = func(p,*func_args,**func_kwargs)
+    cmag = np.sqrt(c[:,0]**2 + c[:,1]**2 + c[:,2]**2)
+    #c = np.ma.masked_array(c,mask=cmag<minmag)
+    c *= arrow_length
+    ends = p + c
+    mscale = kwargs.pop('mutation_scale',1.0)
+    for i in range(len(p)):
+      if cmag[i] > minmag:
+        artist = Arrow3D(*zip(p[i],ends[i]),mutation_scale=cmag[i]*mscale,**kwargs)
+        self.add_artist(artist)
+
 
   def set_pbaspect(self,x):
     self.pbaspect = np.asarray(x)
@@ -119,10 +163,11 @@ class Axes3D(_Axes3D):
     if labels is None:
       labels = ['x','y','z']
 
+    self.plot([center[0]],[center[1]],[center[2]],'ko')
     for v,i in enumerate(Perturb(np.zeros(3),length)):
       ends = i + center
       artist = Arrow3D(*zip(center,ends),**kwargs)
-      self.text(ends[0],ends[1],ends[2],labels[v])
+      self.text(ends[0],ends[1],ends[2],labels[v],color=[0.3,0.3,0.3])
       self.add_artist(artist)
 
 

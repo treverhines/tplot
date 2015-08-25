@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+import numpy as np
+import mayavi.mlab as mlab
+import transform
+import tplot.cm
+
+T = transform.point_rotation_x(xrot)
+T += transform.point_rotation_y(yrot)
+T += transform.point_rotation_z(zrot)
+T += transform.point_translation(anchor)
+
+def cross_section(func,trans,
+                  Nl=20,Nw=20,
+                  cmap=tcm.slip,
+                  lw=1.0,
+                  clim=None,
+                  func_args=None,
+                  func_kwargs=None,
+                  **kwargs):
+  if func_args is None:
+    func_args = ()
+
+  if func_kwargs is None:
+    func_kwargs = {}
+
+  x = np.linspace(0,1,Nl)
+  y = np.linspace(0,1,Nw)
+  x,y = np.meshgrid(x,y)
+  z = 0.0*x
+  p = np.concatenate((x[:,:,None],
+                      y[:,:,None],
+                      z[:,:,None]),
+                      axis=-1)
+  p = trans(p)
+  print(p)
