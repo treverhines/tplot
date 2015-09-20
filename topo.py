@@ -6,7 +6,7 @@ import tplot.cm
 from tplot.xsection import cmap_to_rgba
 import mayavi.mlab 
 
-def draw_topography(basemap,zscale=10,cmap=tplot.cm.etopo1,**kwargs):
+def draw_topography(basemap,zscale=1,cmap=tplot.cm.etopo1,**kwargs):
   url = 'http://ferret.pmel.noaa.gov/thredds/dodsC/data/PMEL/etopo1.nc'
   etopodata = Dataset(url)
 
@@ -35,7 +35,9 @@ def draw_topography(basemap,zscale=10,cmap=tplot.cm.etopo1,**kwargs):
   dataitp = itp(lonitp,latitp)
   longrid,latgrid = np.meshgrid(lonitp,latitp)
   xgrid,ygrid = basemap(longrid,latgrid)
-  m = mayavi.mlab.mesh(xgrid,ygrid,zscale*dataitp,
+  vmin = -8210.0*zscale
+  vmax = 7000.0*zscale
+  m = mayavi.mlab.mesh(xgrid,ygrid,zscale*dataitp,vmin=vmin,vmax=vmax,
                        **kwargs)
   rgba = cmap_to_rgba(cmap)
   m.module_manager.scalar_lut_manager.lut.table = rgba

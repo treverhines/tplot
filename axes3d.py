@@ -7,7 +7,7 @@ import numpy as np
 import cm as tcm
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch
-from inverse.tikhonov import Perturb
+from modest.tikhonov import Perturb
 
 class Arrow3D(FancyArrowPatch):
   '''                                   
